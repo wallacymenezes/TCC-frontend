@@ -1,0 +1,16 @@
+# Ignore all .log files
+*.log
+
+# Ignore the 'node_modules' directory
+node_modules/
+
+# Ignore temporary files created by the operating system
+.DS_Store
+Thumbs.db
+
+# Ignore build artifacts
+build/
+dist/
+
+# Exclude a specific file from being ignored
+!important_config.js

@@ -3,86 +3,99 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
 
+// Tipos baseados no seu Backend DTOs
 interface User {
-  id: string
+  id: number // Backend usa Long (number)
   nome: string
   email: string
-  username: string
-  avatar?: string
-  bio?: string
-  role: "USER" | "ADMIN"
-  createdAt: string
+  fotoUrl?: string // Backend: fotoUrl
+  descricao?: string // Backend: descricao
+  perfis: string[] // Backend: Set<String>
 }
 
 interface AuthContextType {
   user: User | null
   isAuthenticated: boolean
   isLoading: boolean
-  login: (email: string, password: string) => Promise<void>
+  login: (email: string, senha: string) => Promise<void>
   register: (data: RegisterData) => Promise<void>
   logout: () => void
   updateUser: (data: Partial<User>) => void
+  token: string | null
 }
 
 interface RegisterData {
   nome: string
   email: string
-  username: string
+  username: string // O backend atual usa email como username, mas podemos manter no front se quiser
   password: string
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api"
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
+  const [token, setToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
 
-  useEffect(() => {
-    // Check for stored auth token and validate
-    const checkAuth = async () => {
-      const token = localStorage.getItem("hive_token")
-      if (token) {
-        try {
-          // Simulate API call to validate token and get user
-          const storedUser = localStorage.getItem("hive_user")
-          if (storedUser) {
-            setUser(JSON.parse(storedUser))
-          }
-        } catch {
-          localStorage.removeItem("hive_token")
-          localStorage.removeItem("hive_user")
-        }
+  // Função auxiliar para buscar dados do usuário logado
+  const fetchUserProfile = async (accessToken: string) => {
+    try {
+      const response = await fetch(`${API_URL}/usuarios/me`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      })
+
+      if (response.ok) {
+        const userData = await response.json()
+        setUser(userData)
+      } else {
+        logout()
       }
+    } catch (error) {
+      logout()
+    }
+  }
+
+  useEffect(() => {
+    const storedToken = localStorage.getItem("hive_token")
+    if (storedToken) {
+      setToken(storedToken)
+      fetchUserProfile(storedToken).finally(() => setIsLoading(false))
+    } else {
       setIsLoading(false)
     }
-    checkAuth()
   }, [])
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, senha: string) => {
     setIsLoading(true)
     try {
-      // Simulate API call - replace with actual API
-      // const response = await fetch('/api/auth/autenticar', { ... })
+      const response = await fetch(`${API_URL}/auth/autenticar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, senha }),
+      })
 
-      // Mock successful login
-      const mockUser: User = {
-        id: "1",
-        nome: "Hiver Demo",
-        email,
-        username: "hiverdemo",
-        avatar: "/diverse-user-avatars.png",
-        bio: "Apaixonado por compartilhar conhecimento 📚",
-        role: "USER",
-        createdAt: new Date().toISOString(),
+      if (!response.ok) {
+        throw new Error("Credenciais inválidas")
       }
 
-      localStorage.setItem("hive_token", "mock_jwt_token")
-      localStorage.setItem("hive_user", JSON.stringify(mockUser))
-      setUser(mockUser)
+      const data = await response.json() // LoginResponseDTO { accessToken, expiresIn }
+      const accessToken = data.accessToken
+
+      localStorage.setItem("hive_token", accessToken)
+      setToken(accessToken)
+      
+      // Busca os dados completos do usuário após login
+      await fetchUserProfile(accessToken)
+      
       router.push("/feed")
     } catch (error) {
-      throw new Error("Credenciais inválidas")
+      throw error
     } finally {
       setIsLoading(false)
     }
@@ -91,24 +104,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = async (data: RegisterData) => {
     setIsLoading(true)
     try {
-      // Simulate API call - replace with actual API
-      // const response = await fetch('/api/usuarios/registrar', { ... })
+      const response = await fetch(`${API_URL}/usuarios/registrar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nome: data.nome,
+          email: data.email,
+          senha: data.password, // Mapeando password -> senha
+        }),
+      })
 
-      const mockUser: User = {
-        id: "1",
-        nome: data.nome,
-        email: data.email,
-        username: data.username,
-        role: "USER",
-        createdAt: new Date().toISOString(),
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || "Erro ao criar conta")
       }
 
-      localStorage.setItem("hive_token", "mock_jwt_token")
-      localStorage.setItem("hive_user", JSON.stringify(mockUser))
-      setUser(mockUser)
-      router.push("/feed")
+      // Após registrar, fazemos o login automático
+      await login(data.email, data.password)
     } catch (error) {
-      throw new Error("Erro ao criar conta")
+      throw error
     } finally {
       setIsLoading(false)
     }
@@ -116,16 +130,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     localStorage.removeItem("hive_token")
-    localStorage.removeItem("hive_user")
+    setToken(null)
     setUser(null)
-    router.push("/")
+    router.push("/login")
   }
 
   const updateUser = (data: Partial<User>) => {
     if (user) {
-      const updatedUser = { ...user, ...data }
-      localStorage.setItem("hive_user", JSON.stringify(updatedUser))
-      setUser(updatedUser)
+      setUser({ ...user, ...data })
     }
   }
 
@@ -139,6 +151,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         register,
         logout,
         updateUser,
+        token,
       }}
     >
       {children}

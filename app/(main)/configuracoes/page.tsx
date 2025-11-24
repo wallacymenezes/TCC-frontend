@@ -21,9 +21,8 @@ export default function ConfiguracoesPage() {
 
   const [profileData, setProfileData] = useState({
     nome: user?.nome || "",
-    username: user?.username || "",
     email: user?.email || "",
-    bio: user?.bio || "",
+    bio: user?.descricao || "",
   })
 
   const [notifications, setNotifications] = useState({
@@ -84,7 +83,7 @@ export default function ConfiguracoesPage() {
               <div className="flex items-center gap-6">
                 <div className="relative">
                   <Avatar className="h-24 w-24">
-                    <AvatarImage src={user?.avatar || "/placeholder.svg"} />
+                    <AvatarImage src={user?.fotoUrl || "/placeholder.svg"} />
                     <AvatarFallback className="text-2xl bg-accent text-accent-foreground">
                       {user?.nome?.charAt(0) || "H"}
                     </AvatarFallback>
@@ -116,18 +115,7 @@ export default function ConfiguracoesPage() {
                       className="bg-secondary"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="username">Username</Label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">@</span>
-                      <Input
-                        id="username"
-                        value={profileData.username}
-                        onChange={(e) => setProfileData({ ...profileData, username: e.target.value })}
-                        className="bg-secondary pl-8"
-                      />
-                    </div>
-                  </div>
+
                 </div>
 
                 <div className="space-y-2">
