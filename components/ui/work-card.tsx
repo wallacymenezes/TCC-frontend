@@ -45,7 +45,7 @@ export function WorkCard({ work, className, variant = "default" }: WorkCardProps
       )}
     >
       <Link href={`/obra/${work.id}`}>
-        <div className={cn("relative overflow-hidden bg-secondary", isCompact ? "aspect-[3/4]" : "aspect-[4/5]")}>
+        <div className={cn("relative overflow-hidden bg-secondary", isCompact ? "aspect-3/4" : "aspect-4/5")}>
           {work.capa ? (
             <Image
               src={work.capa || "/placeholder.svg"}
@@ -58,7 +58,7 @@ export function WorkCard({ work, className, variant = "default" }: WorkCardProps
               <BookOpen className="h-12 w-12 text-muted-foreground" />
             </div>
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="absolute inset-0 bg-linear-to-t from-background/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <Badge className="absolute top-3 left-3 bg-primary text-primary-foreground">{work.categoria}</Badge>
         </div>
       </Link>

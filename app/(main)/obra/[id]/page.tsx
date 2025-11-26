@@ -127,7 +127,7 @@ export default function ObraPage() {
         {/* Coluna Esquerda - Capa e Ações */}
         <div className="lg:col-span-1">
           <div className="sticky top-24 space-y-6">
-            <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-secondary border border-border flex items-center justify-center">
+            <div className="relative aspect-3/4 rounded-xl overflow-hidden bg-secondary border border-border flex items-center justify-center">
                 {/* O backend atualmente não tem campo de capa no ObraResponseDTO, usando placeholder ou fotoAutor se quiser improvisar */}
                 <BookOpen className="h-20 w-20 text-muted-foreground/50" />
             </div>

@@ -42,7 +42,7 @@ export default function PerfilPage() {
       {/* Cabeçalho do Perfil */}
       <div className="relative mb-12">
         {/* Capa */}
-        <div className="h-48 md:h-64 rounded-xl bg-gradient-to-r from-primary to-primary/60 overflow-hidden">
+        <div className="h-48 md:h-64 rounded-xl bg-linear-to-r from-primary to-primary/60 overflow-hidden">
           <div className="absolute inset-0 bg-[url('/hexagonal-pattern-purple.jpg')] opacity-20" />
         </div>
 
