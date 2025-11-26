@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation"
 
 // Tipos baseados no seu Backend DTOs
 interface User {
+  avaliacoesFeitas: any
+  obrasPublicadas: any
+  obrasCurtidas: any
   id: number // Backend usa Long (number)
   nome: string
   email: string

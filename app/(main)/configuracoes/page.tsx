@@ -1,311 +1,192 @@
 "use client"
 
-import { useState } from "react"
-import { User, Lock, Bell, Shield, Trash2, Save, Loader2, Camera } from "lucide-react"
+import { useState, useEffect } from "react"
+import { User, Lock, Save, Loader2, Camera } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Switch } from "@/components/ui/switch"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Separator } from "@/components/ui/separator"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/hooks/use-toast"
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL
+
 export default function ConfiguracoesPage() {
-  const { user, updateUser } = useAuth()
+  const { user, updateUser, token } = useAuth()
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
 
-  const [profileData, setProfileData] = useState({
-    nome: user?.nome || "",
-    email: user?.email || "",
-    bio: user?.descricao || "",
-  })
+  // Profile State
+  const [nome, setNome] = useState("")
+  const [descricao, setDescricao] = useState("")
+  const [previewFoto, setPreviewFoto] = useState("")
+  const [fotoFile, setFotoFile] = useState<File | null>(null)
 
-  const [notifications, setNotifications] = useState({
-    email: true,
-    likes: true,
-    comments: true,
-    downloads: false,
-    newsletter: true,
-  })
+  // Password State
+  const [senhaAtual, setSenhaAtual] = useState("")
+  const [novaSenha, setNovaSenha] = useState("")
+
+  useEffect(() => {
+    if (user) {
+      setNome(user.nome || "")
+      setDescricao(user.descricao || "")
+      setPreviewFoto(user.fotoUrl || "")
+    }
+  }, [user])
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0]
+      setFotoFile(file)
+      setPreviewFoto(URL.createObjectURL(file))
+    }
+  }
 
   const handleSaveProfile = async () => {
+    if (!token) return
     setIsLoading(true)
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    updateUser(profileData)
-    toast({
-      title: "Perfil atualizado!",
-      description: "Suas alterações foram salvas com sucesso.",
-    })
-    setIsLoading(false)
+
+    try {
+      const formData = new FormData()
+      // JSON part as 'dados'
+      const dto = { nome, descricao }
+      formData.append("dados", new Blob([JSON.stringify(dto)], { type: "application/json" }))
+      
+      // File part as 'foto'
+      if (fotoFile) {
+        formData.append("foto", fotoFile)
+      }
+
+      // Endpoint correto conforme UsuarioController.java
+      const res = await fetch(`${API_URL}/usuarios/atualizar`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData // Content-Type é automático
+      })
+
+      if (!res.ok) throw new Error("Falha ao atualizar perfil")
+
+      const updatedUser = await res.json()
+      updateUser(updatedUser) // Atualiza contexto
+      toast({ title: "Perfil atualizado com sucesso!" })
+      
+    } catch (error) {
+      console.error(error)
+      toast({ title: "Erro ao salvar", description: "Tente novamente.", variant: "destructive" })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleChangePassword = async () => {
+    if (!token) return
+    setIsLoading(true)
+    try {
+      const res = await fetch(`${API_URL}/usuarios/senha`, {
+        method: "PATCH",
+        headers: { 
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ senhaAtual, novaSenha })
+      })
+
+      if (res.ok) {
+        toast({ title: "Senha alterada com sucesso!" })
+        setSenhaAtual("")
+        setNovaSenha("")
+      } else {
+        toast({ title: "Erro", description: "Senha atual incorreta.", variant: "destructive" })
+      }
+    } catch (error) {
+        toast({ title: "Erro ao alterar senha", variant: "destructive" })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
     <div className="container max-w-4xl px-4 py-8">
-      <div className="mb-8">
-        <h1 className="font-heading text-3xl font-bold mb-2">Configurações</h1>
-        <p className="text-muted-foreground">Gerencie sua conta e preferências</p>
-      </div>
+      <h1 className="font-heading text-3xl font-bold mb-8">Configurações</h1>
 
       <Tabs defaultValue="perfil" className="space-y-8">
         <TabsList className="bg-secondary w-full justify-start">
-          <TabsTrigger value="perfil" className="gap-2">
-            <User size={16} />
-            Perfil
-          </TabsTrigger>
-          <TabsTrigger value="seguranca" className="gap-2">
-            <Lock size={16} />
-            Segurança
-          </TabsTrigger>
-          <TabsTrigger value="notificacoes" className="gap-2">
-            <Bell size={16} />
-            Notificações
-          </TabsTrigger>
-          <TabsTrigger value="privacidade" className="gap-2">
-            <Shield size={16} />
-            Privacidade
-          </TabsTrigger>
+          <TabsTrigger value="perfil" className="gap-2"><User size={16} /> Perfil</TabsTrigger>
+          <TabsTrigger value="seguranca" className="gap-2"><Lock size={16} /> Segurança</TabsTrigger>
         </TabsList>
 
-        {/* Profile Tab */}
         <TabsContent value="perfil">
           <Card className="bg-card border-border">
             <CardHeader>
-              <CardTitle>Informações do Perfil</CardTitle>
-              <CardDescription>Atualize suas informações pessoais</CardDescription>
+                <CardTitle>Informações do Perfil</CardTitle>
+                <CardDescription>Atualize suas informações públicas</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Avatar */}
               <div className="flex items-center gap-6">
                 <div className="relative">
                   <Avatar className="h-24 w-24">
-                    <AvatarImage src={user?.fotoUrl || "/placeholder.svg"} />
-                    <AvatarFallback className="text-2xl bg-accent text-accent-foreground">
-                      {user?.nome?.charAt(0) || "H"}
-                    </AvatarFallback>
+                    <AvatarImage src={previewFoto || "/placeholder-user.jpg"} className="object-cover" />
+                    <AvatarFallback className="text-2xl">{nome.charAt(0)}</AvatarFallback>
                   </Avatar>
-                  <Button
-                    size="icon"
-                    className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full bg-accent text-accent-foreground"
-                  >
+                  <label htmlFor="foto-upload" className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full bg-accent text-accent-foreground flex items-center justify-center cursor-pointer hover:bg-accent/90 shadow-lg">
                     <Camera size={14} />
-                  </Button>
+                    <input id="foto-upload" type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
+                  </label>
                 </div>
                 <div>
-                  <p className="font-medium">Foto de perfil</p>
-                  <p className="text-sm text-muted-foreground">JPG, PNG ou GIF. Máximo 2MB.</p>
+                   <p className="font-medium">Foto de perfil</p>
+                   <p className="text-sm text-muted-foreground">JPG ou PNG. Máx 5MB.</p>
                 </div>
               </div>
 
-              <Separator />
-
-              {/* Form Fields */}
               <div className="grid gap-4">
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="nome">Nome completo</Label>
-                    <Input
-                      id="nome"
-                      value={profileData.nome}
-                      onChange={(e) => setProfileData({ ...profileData, nome: e.target.value })}
-                      className="bg-secondary"
-                    />
-                  </div>
-
-                </div>
-
                 <div className="space-y-2">
-                  <Label htmlFor="email">E-mail</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={profileData.email}
-                    onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
-                    className="bg-secondary"
-                  />
+                    <Label>Nome completo</Label>
+                    <Input value={nome} onChange={(e) => setNome(e.target.value)} className="bg-secondary" />
                 </div>
-
                 <div className="space-y-2">
-                  <Label htmlFor="bio">Bio</Label>
-                  <Textarea
-                    id="bio"
-                    placeholder="Conte um pouco sobre você..."
-                    value={profileData.bio}
-                    onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
-                    className="bg-secondary min-h-[100px]"
-                  />
+                    <Label>E-mail (não editável)</Label>
+                    <Input value={user?.email} disabled className="bg-secondary/50 opacity-70" />
+                </div>
+                <div className="space-y-2">
+                    <Label>Bio</Label>
+                    <Textarea value={descricao} onChange={(e) => setDescricao(e.target.value)} className="bg-secondary min-h-[100px]" placeholder="Conte um pouco sobre você..." />
                 </div>
               </div>
 
               <div className="flex justify-end">
-                <Button
-                  onClick={handleSaveProfile}
-                  disabled={isLoading}
-                  className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2"
-                >
-                  {isLoading ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                  Salvar alterações
+                <Button onClick={handleSaveProfile} disabled={isLoading} className="bg-accent text-accent-foreground">
+                  {isLoading ? <Loader2 className="animate-spin mr-2" /> : <Save size={16} className="mr-2" />} Salvar
                 </Button>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Security Tab */}
         <TabsContent value="seguranca">
           <Card className="bg-card border-border">
             <CardHeader>
-              <CardTitle>Segurança da Conta</CardTitle>
-              <CardDescription>Gerencie sua senha e segurança</CardDescription>
+                <CardTitle>Segurança</CardTitle>
+                <CardDescription>Altere sua senha de acesso</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="current-password">Senha atual</Label>
-                  <Input id="current-password" type="password" className="bg-secondary" />
+                  <Label>Senha atual</Label>
+                  <Input type="password" value={senhaAtual} onChange={e => setSenhaAtual(e.target.value)} className="bg-secondary" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="new-password">Nova senha</Label>
-                  <Input id="new-password" type="password" className="bg-secondary" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="confirm-password">Confirmar nova senha</Label>
-                  <Input id="confirm-password" type="password" className="bg-secondary" />
+                  <Label>Nova senha</Label>
+                  <Input type="password" value={novaSenha} onChange={e => setNovaSenha(e.target.value)} className="bg-secondary" />
                 </div>
               </div>
-
               <div className="flex justify-end">
-                <Button className="bg-accent text-accent-foreground hover:bg-accent/90">Alterar senha</Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Notifications Tab */}
-        <TabsContent value="notificacoes">
-          <Card className="bg-card border-border">
-            <CardHeader>
-              <CardTitle>Preferências de Notificação</CardTitle>
-              <CardDescription>Escolha como deseja ser notificado</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Notificações por e-mail</p>
-                    <p className="text-sm text-muted-foreground">Receba atualizações importantes por e-mail</p>
-                  </div>
-                  <Switch
-                    checked={notifications.email}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, email: checked })}
-                  />
-                </div>
-
-                <Separator />
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Curtidas em suas obras</p>
-                    <p className="text-sm text-muted-foreground">Quando alguém curtir suas obras</p>
-                  </div>
-                  <Switch
-                    checked={notifications.likes}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, likes: checked })}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Comentários e avaliações</p>
-                    <p className="text-sm text-muted-foreground">Quando alguém avaliar suas obras</p>
-                  </div>
-                  <Switch
-                    checked={notifications.comments}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, comments: checked })}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Downloads</p>
-                    <p className="text-sm text-muted-foreground">Quando alguém baixar suas obras</p>
-                  </div>
-                  <Switch
-                    checked={notifications.downloads}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, downloads: checked })}
-                  />
-                </div>
-
-                <Separator />
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Newsletter</p>
-                    <p className="text-sm text-muted-foreground">Novidades e dicas da HiveBooks</p>
-                  </div>
-                  <Switch
-                    checked={notifications.newsletter}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, newsletter: checked })}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Privacy Tab */}
-        <TabsContent value="privacidade">
-          <Card className="bg-card border-border">
-            <CardHeader>
-              <CardTitle>Privacidade</CardTitle>
-              <CardDescription>Controle quem pode ver suas informações</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Perfil público</p>
-                    <p className="text-sm text-muted-foreground">Permitir que outros vejam seu perfil</p>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Mostrar obras curtidas</p>
-                    <p className="text-sm text-muted-foreground">Exibir obras que você curtiu no perfil</p>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Mostrar estatísticas</p>
-                    <p className="text-sm text-muted-foreground">Exibir contadores de downloads e curtidas</p>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-              </div>
-
-              <Separator />
-
-              <div className="p-4 bg-destructive/10 rounded-lg border border-destructive/20">
-                <div className="flex items-start gap-4">
-                  <Trash2 className="h-5 w-5 text-destructive mt-0.5" />
-                  <div>
-                    <p className="font-medium text-destructive">Excluir conta</p>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Esta ação é irreversível. Todos os seus dados serão permanentemente removidos.
-                    </p>
-                    <Button variant="destructive" size="sm">
-                      Excluir minha conta
-                    </Button>
-                  </div>
-                </div>
+                <Button onClick={handleChangePassword} disabled={isLoading || !senhaAtual || !novaSenha} className="bg-accent text-accent-foreground">
+                   Alterar senha
+                </Button>
               </div>
             </CardContent>
           </Card>
