@@ -5,6 +5,8 @@
 node_modules/
 .next/
 
+.env
+
 # Ignore temporary files created by the operating system
 .DS_Store
 Thumbs.db
