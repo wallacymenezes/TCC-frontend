@@ -6,7 +6,8 @@ export function Footer() {
   return (
     <footer className="border-t border-border bg-card">
       <div className="container px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        {/* Ajustado para 3 colunas */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Brand */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
@@ -17,17 +18,6 @@ export function Footer() {
               Compartilhe o conhecimento e construa uma colmeia. Democratizando o acesso à informação no ensino
               superior.
             </p>
-            <div className="flex gap-4">
-              <a href="#" className="text-muted-foreground hover:text-accent transition-colors">
-                <Github size={20} />
-              </a>
-              <a href="#" className="text-muted-foreground hover:text-accent transition-colors">
-                <Twitter size={20} />
-              </a>
-              <a href="#" className="text-muted-foreground hover:text-accent transition-colors">
-                <Instagram size={20} />
-              </a>
-            </div>
           </div>
 
           {/* Platform */}
@@ -48,17 +38,17 @@ export function Footer() {
                 <Link href="/hivar" className="hover:text-foreground transition-colors">
                   Hivar uma Obra
                 </Link>
-              </li>
+              </li>{/*
               <li>
                 <Link href="/ranking" className="hover:text-foreground transition-colors">
                   Ranking
                 </Link>
-              </li>
+              </li>*/}
             </ul>
           </div>
 
           {/* Support */}
-          <div className="space-y-4">
+          {/*<div className="space-y-4">
             <h4 className="font-heading font-semibold">Suporte</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
@@ -82,34 +72,7 @@ export function Footer() {
                 </Link>
               </li>
             </ul>
-          </div>
-
-          {/* Legal */}
-          <div className="space-y-4">
-            <h4 className="font-heading font-semibold">Legal</h4>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>
-                <Link href="/termos" className="hover:text-foreground transition-colors">
-                  Termos de Uso
-                </Link>
-              </li>
-              <li>
-                <Link href="/privacidade" className="hover:text-foreground transition-colors">
-                  Privacidade
-                </Link>
-              </li>
-              <li>
-                <Link href="/diretrizes" className="hover:text-foreground transition-colors">
-                  Diretrizes
-                </Link>
-              </li>
-              <li>
-                <Link href="/licencas" className="hover:text-foreground transition-colors">
-                  Licenças
-                </Link>
-              </li>
-            </ul>
-          </div>
+          </div>*/}
         </div>
 
         <div className="mt-12 pt-8 border-t border-border flex flex-col md:flex-row justify-between items-center gap-4">

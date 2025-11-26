@@ -75,7 +75,7 @@ export default function PerfilPage() {
           <div className="flex flex-col md:flex-row md:items-end gap-4 md:gap-6">
             {/* Avatar */}
             <Avatar className="h-32 w-32 md:h-40 md:w-40 border-4 border-background">
-              <AvatarImage src={user?.avatar || "/placeholder.svg"} />
+              <AvatarImage src={user?.fotoUrl || "/placeholder.svg"} />
               <AvatarFallback className="text-4xl bg-accent text-accent-foreground">
                 {user?.nome?.charAt(0) || "H"}
               </AvatarFallback>

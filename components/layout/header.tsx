@@ -76,19 +76,19 @@ export function Header() {
               </Button>
 
               {/* Notifications */}
-              <Button variant="ghost" size="icon" className="relative">
+              {/*<Button variant="ghost" size="icon" className="relative">
                 <Bell size={20} />
                 <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-accent text-[10px] font-medium text-accent-foreground flex items-center justify-center">
                   3
                 </span>
-              </Button>
+              </Button>*/}
 
               {/* User Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                     <Avatar className="h-9 w-9 border-2 border-primary">
-                      <AvatarImage src={user?.avatar || "/placeholder.svg"} alt={user?.nome} />
+                      <AvatarImage src={user?.fotoUrl || "/placeholder.svg"} alt={user?.nome} />
                       <AvatarFallback className="bg-primary text-primary-foreground">
                         {user?.nome?.charAt(0) || "H"}
                       </AvatarFallback>
@@ -98,12 +98,12 @@ export function Header() {
                 <DropdownMenuContent className="w-56" align="end" forceMount>
                   <div className="flex items-center gap-2 p-2">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={user?.avatar || "/placeholder.svg"} />
+                      <AvatarImage src={user?.fotoUrl || "/placeholder.svg"} />
                       <AvatarFallback>{user?.nome?.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium">{user?.nome}</p>
-                      <p className="text-xs text-muted-foreground">@{user?.username}</p>
+                      <p className="text-xs text-muted-foreground">{user?.email}</p>
                     </div>
                   </div>
                   <DropdownMenuSeparator />
@@ -111,12 +111,6 @@ export function Header() {
                     <Link href="/perfil" className="flex items-center gap-2 cursor-pointer">
                       <User size={16} />
                       Meu Perfil
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/minhas-obras" className="flex items-center gap-2 cursor-pointer">
-                      <BookOpen size={16} />
-                      Minhas Obras
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
