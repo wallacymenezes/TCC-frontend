@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Rating } from "@/components/ui/rating"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/contexts/auth-context"
 
 export interface Work {
   id: string
@@ -19,6 +20,7 @@ export interface Work {
   totalAvaliacoes: number
   curtidas: number
   downloads: number
+  idsUsuariosQueCurtiram?: number[]
   usuario: {
     id: string
     nome: string
@@ -36,6 +38,10 @@ interface WorkCardProps {
 
 export function WorkCard({ work, className, variant = "default" }: WorkCardProps) {
   const isCompact = variant === "compact"
+  const { user } = useAuth()
+
+  // Verifica se curtiu (convertendo ambos para número para garantir)
+  const isLiked = user && work.idsUsuariosQueCurtiram?.includes(Number(user.id))
 
   return (
     <Card
@@ -101,10 +107,24 @@ export function WorkCard({ work, className, variant = "default" }: WorkCardProps
         </Link>
 
         <div className="flex items-center gap-3 text-muted-foreground">
-          <button className="flex items-center gap-1 hover:text-accent transition-colors">
-            <Heart size={isCompact ? 14 : 16} />
-            <span className={cn(isCompact ? "text-xs" : "text-sm")}>{work.curtidas}</span>
+          {/* Botão de Like - Ajustado */}
+          <button
+            className={cn(
+              "flex items-center gap-1 transition-colors",
+              // Se curtiu: cor amarela (accent). Se não: cor padrão com hover amarelo.
+              isLiked ? "text-yellow-500" : "hover:text-yellow-500"
+            )}
+          >
+            <Heart
+              size={isCompact ? 14 : 16}
+              // Se curtiu: preenchimento amarelo. Se não: sem preenchimento.
+              className={cn(isLiked && "fill-yellow-500")}
+            />
+            <span className={cn(isCompact ? "text-xs" : "text-sm")}>
+              {work.curtidas}
+            </span>
           </button>
+
           <div className="flex items-center gap-1">
             <Download size={isCompact ? 14 : 16} />
             <span className={cn(isCompact ? "text-xs" : "text-sm")}>{work.downloads}</span>

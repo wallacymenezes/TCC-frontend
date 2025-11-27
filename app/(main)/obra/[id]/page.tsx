@@ -54,14 +54,32 @@ export default function ObraPage() {
   const handleLike = async () => {
     if (!token) return toast({ title: "Login necessário", description: "Entre para curtir.", variant: "destructive" })
 
+    // Otimização visual (Optimistic Update)
+    const previousWork = { ...work }
+    const isCurrentlyLiked = work.idsUsuariosQueCurtiram?.includes(user?.id)
+    
+    setWork((prev: any) => {
+      const newIds = isCurrentlyLiked 
+        ? prev.idsUsuariosQueCurtiram.filter((id: number) => id !== user?.id)
+        : [...(prev.idsUsuariosQueCurtiram || []), user?.id]
+      
+      return {
+        ...prev,
+        idsUsuariosQueCurtiram: newIds,
+        quantidadeCurtidas: isCurrentlyLiked ? prev.quantidadeCurtidas - 1 : prev.quantidadeCurtidas + 1
+      }
+    })
+
     try {
       const res = await fetch(`${API_URL}/obras/${params.id}/like`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` }
       })
 
-      if (res.ok) {
-        fetchWork() // Recarrega para atualizar contador
+      if (!res.ok) {
+        // Reverte se der erro
+        setWork(previousWork)
+        throw new Error("Erro ao curtir")
       }
     } catch (error) {
       console.error("Erro ao curtir", error)
@@ -112,15 +130,13 @@ export default function ObraPage() {
   if (loading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin h-8 w-8 text-accent" /></div>
   if (!work) return <div className="text-center py-20">Obra não encontrada.</div>
 
-  // Verifica se o usuário já curtiu (se estiver na lista de curtidas da obra - ajuste conforme seu DTO)
-  // Se o DTO ObraResponseDTO não trouxer a lista de usuários que curtiram, 
-  // podemos assumir que o contador atualiza e o botão serve de toggle.
-  const isLiked = false // Idealmente, o backend retornaria um booleano "likedByMe"
+  // LÓGICA CORRIGIDA: Verifica se o ID do usuário está na lista
+  const isLiked = user && work.idsUsuariosQueCurtiram?.includes(Number(user.id));
 
   return (
     <div className="container px-4 py-8">
       <Link href="/feed" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6">
-        <ArrowLeft size={16} /> Voltar
+        <ArrowLeft size={16} /> Voltar ao feed
       </Link>
 
       <div className="grid lg:grid-cols-3 gap-8">
@@ -128,8 +144,11 @@ export default function ObraPage() {
         <div className="lg:col-span-1">
           <div className="sticky top-24 space-y-6">
             <div className="relative aspect-3/4 rounded-xl overflow-hidden bg-secondary border border-border flex items-center justify-center">
-                {/* O backend atualmente não tem campo de capa no ObraResponseDTO, usando placeholder ou fotoAutor se quiser improvisar */}
-                <BookOpen className="h-20 w-20 text-muted-foreground/50" />
+                {work.capa ? (
+                    <Image src={work.capa} alt={work.titulo} fill className="object-cover" />
+                ) : (
+                    <BookOpen className="h-20 w-20 text-muted-foreground/50" />
+                )}
             </div>
 
             <div className="space-y-3">
@@ -140,8 +159,16 @@ export default function ObraPage() {
               </Button>
 
               <div className="grid grid-cols-2 gap-3">
-                <Button variant="outline" className="gap-2" onClick={handleLike}>
-                  <Heart size={18} className={cn(isLiked && "fill-red-500 text-red-500")} />
+                <Button 
+                    variant={isLiked ? "default" : "outline"} 
+                    className={cn(
+                        "gap-2 transition-colors",
+                        // APLICAÇÃO DA COR AMARELA
+                        isLiked ? "bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-500" : "hover:text-yellow-500 hover:border-yellow-500"
+                    )} 
+                    onClick={handleLike}
+                >
+                  <Heart size={18} className={cn(isLiked && "fill-white")} />
                   {work.quantidadeCurtidas || 0}
                 </Button>
                 <Button variant="outline" className="gap-2 bg-transparent">
@@ -194,7 +221,7 @@ export default function ObraPage() {
                 </Avatar>
                 <div className="flex-1">
                   <p className="font-semibold">{work.nomeAutor}</p>
-                  <p className="text-sm text-muted-foreground">Autor</p>
+                  <p className="text-sm text-muted-foreground">Autor da publicação</p>
                 </div>
               </div>
             </CardContent>
@@ -216,7 +243,6 @@ export default function ObraPage() {
               <MessageCircle size={20} className="text-accent" /> Avaliações
             </h2>
 
-            {/* Formulário de Avaliação */}
             <Card className="bg-card border-border">
               <CardHeader><h3 className="font-semibold">Deixe sua avaliação</h3></CardHeader>
               <CardContent className="space-y-4">
@@ -240,7 +266,6 @@ export default function ObraPage() {
               </CardContent>
             </Card>
 
-            {/* Lista de Avaliações */}
             <div className="space-y-4">
               {work.avaliacoes?.map((av: any) => (
                 <Card key={av.id} className="bg-card border-border">
